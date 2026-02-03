@@ -817,6 +817,81 @@ export interface Config {
                */
               maxCommandRedirections?: number;
             };
+            /**
+             * An optional Redis sentinel configuration.
+             */
+            sentinel?: {
+              /**
+               * The sentinel identifier for a particular database cluster
+               *
+               */
+              name: String;
+
+              /**
+               * An array of root nodes that are part of the sentinel cluster, which will be used to get the topology.
+               * Each element in the array is a client configuration object.
+               * There is no need to specify every node in the cluster: 3 should be enough to reliably connect and obtain the sentinel configuration from the server
+               *
+               * @visibility secret
+               */
+              sentinelRootNodes: Array<object>;
+
+              /**
+               * The maximum number of times a command will retry due to topology changes.
+               *
+               * Defaults to 16 unspecified.
+               * */
+              maxCommandRediscovers?: number;
+
+              /**
+               * The configuration values for every node in the cluster. Use this for example when specifying an ACL user to connect with
+               */
+              nodeClientOptions?: object;
+
+              /**
+               * The configuration values for every sentinel in the cluster. Use this for example when specifying an ACL user to connect with
+               */
+              sentinelClientOptions?: object;
+
+              /**
+               * The number of clients connected to the master node
+               *
+               * Defaults to 1
+               */
+              masterPoolSize?: number;
+
+              /**
+               * The number of clients connected to each replica node.
+               * When greater than 0, the client will distribute the load by executing read-only commands (such as GET, GEOSEARCH, etc.) across all the cluster nodes.
+               *
+               * Defaults to 0
+               */
+              replicaPoolSize?: number;
+
+              /**
+               * Interval in milliseconds to periodically scan for changes in the sentinel topology.
+               * The client will query the sentinel for changes at this interval.
+               *
+               * Defaults to 10000 milliseconds
+               */
+              scanInterval?: number;
+
+              /**
+               * When true, error events from client instances inside the sentinel will be propagated to the sentinel instance.
+               * This allows handling all client errors through a single error handler on the sentinel instance.
+               *
+               * Defaults to false
+               */
+              passthroughClientErrorEvents?: boolean;
+
+              /**
+               * When true, one client will be reserved for the sentinel object.
+               * When false, the sentinel object will wait for the first available client from the pool.
+               *
+               * Defaults to false
+               */
+              reserveClient?: boolean;
+            };
           };
         }
       | {

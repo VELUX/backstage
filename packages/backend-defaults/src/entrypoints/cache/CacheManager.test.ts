@@ -15,7 +15,7 @@
  */
 
 import { mockServices, TestCaches } from '@backstage/backend-test-utils';
-import KeyvRedis, { createCluster } from '@keyv/redis';
+import KeyvRedis, { createCluster, createSentinel } from '@keyv/redis';
 import KeyvValkey from '@keyv/valkey';
 import KeyvMemcache from '@keyv/memcache';
 import { CacheManager } from './CacheManager';
@@ -32,6 +32,7 @@ jest.mock('@keyv/redis', () => {
     __esModule: true,
     default: jest.fn((...args: any[]) => new DefaultConstructor(...args)),
     createCluster: jest.fn(),
+    createSentinel: jest.fn(),
   };
 });
 jest.mock('@keyv/valkey', () => {
@@ -281,6 +282,33 @@ describe('CacheManager store options', () => {
     });
   });
 
+  it('uses sentinel config when present', () => {
+    const manager = CacheManager.fromConfig(
+      mockServices.rootConfig({
+        data: {
+          backend: {
+            cache: {
+              store: 'redis',
+              connection: 'redis://localhost:6379',
+              redis: {
+                sentinel: {
+                  name: 'sentinel-db',
+                  sentinelRootNodes: [{ host: 'example', port: 6379 }],
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+    manager.forPlugin('p1');
+
+    expect(createSentinel).toHaveBeenCalledWith({
+      name: 'sentinel-db',
+      sentinelRootNodes: [{ host: 'example', port: 6379 }],
+    });
+  });
+
   it('respects client config for non-clustered mode', () => {
     const manager = CacheManager.fromConfig(
       mockServices.rootConfig({
@@ -320,6 +348,40 @@ describe('CacheManager store options', () => {
                 },
                 cluster: {
                   rootNodes: [{ url: 'redis://localhost:6379' }],
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+    manager.forPlugin('p1');
+
+    expect(KeyvRedis).toHaveBeenCalledWith(expect.anything(), {
+      keyPrefixSeparator: '!',
+    });
+  });
+
+  it('accepts client config for sentinel mode', () => {
+    const manager = CacheManager.fromConfig(
+      mockServices.rootConfig({
+        data: {
+          backend: {
+            cache: {
+              store: 'redis',
+              connection: 'redis://localhost:6379',
+              redis: {
+                client: {
+                  keyPrefixSeparator: '!',
+                },
+                sentinel: {
+                  name: 'sentinel-db',
+                  sentinelRootNodes: [
+                    {
+                      host: 'example',
+                      port: '6379',
+                    },
+                  ],
                 },
               },
             },

@@ -16,8 +16,11 @@
 
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { HumanDuration, durationToMilliseconds } from '@backstage/types';
-import { RedisClusterOptions, KeyvRedisOptions } from '@keyv/redis';
+import { KeyvRedisOptions, RedisClusterOptions } from '@keyv/redis';
 import { KeyvValkeyOptions } from '@keyv/valkey';
+
+// NOTE: This will be added to the next @keyv/redis release: https://github.com/jaredwray/keyv/issues/1822
+import { RedisSentinelOptions } from '@redis/client';
 
 /**
  * Options for Redis cache store.
@@ -28,6 +31,7 @@ export type RedisCacheStoreOptions = {
   type: 'redis';
   client?: KeyvRedisOptions;
   cluster?: RedisClusterOptions;
+  sentinel?: RedisSentinelOptions;
 };
 
 /**

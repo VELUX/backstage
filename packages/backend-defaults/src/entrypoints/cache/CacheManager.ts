@@ -206,6 +206,28 @@ export class CacheManager {
       };
     }
 
+    if (redisConfig.has('sentinel')) {
+      const sentinelConfig = redisConfig.getConfig('sentinel');
+
+      redisOptions.sentinel = {
+        name: sentinelConfig.get('name'),
+        sentinelRootNodes: sentinelConfig.get('sentinelRootNodes'),
+        maxCommandRediscovers: sentinelConfig.getOptionalNumber(
+          'maxCommandRediscovers',
+        ),
+        nodeClientOptions: sentinelConfig.getOptional('nodeClientOptions'),
+        sentinelClientOptions: sentinelConfig.getOptional(
+          'sentinelClientOptions',
+        ),
+        masterPoolSize: sentinelConfig.getOptionalNumber('masterPoolSize'),
+        replicaPoolSize: sentinelConfig.getOptionalNumber('replicaPoolSize'),
+        scanInterval: sentinelConfig.getOptionalNumber('scanInterval'),
+        passthroughClientErrorEvents: sentinelConfig.getOptionalBoolean(
+          'passthroughClientErrorEvents',
+        ),
+        reserveClient: sentinelConfig.getOptionalBoolean('reserveClient'),
+      };
+    }
     return redisOptions;
   }
 
@@ -328,7 +350,7 @@ export class CacheManager {
 
   private createRedisStoreFactory(): StoreFactory {
     const KeyvRedis = require('@keyv/redis').default;
-    const { createCluster } = require('@keyv/redis');
+    const { createCluster, createSentinel } = require('@keyv/redis');
     const stores: Record<string, typeof KeyvRedis> = {};
 
     return (pluginId, defaultTtl) => {
@@ -345,6 +367,10 @@ export class CacheManager {
           // Create a Redis cluster
           const cluster = createCluster(this.storeOptions?.cluster);
           stores[pluginId] = new KeyvRedis(cluster, redisOptions);
+        } else if (this.storeOptions?.sentinel) {
+          // Create a Redis Sentinel
+          const sentinel = createSentinel(this.storeOptions?.sentinel);
+          stores[pluginId] = new KeyvRedis(sentinel, redisOptions);
         } else {
           // Create a regular Redis connection
           stores[pluginId] = new KeyvRedis(this.connection, redisOptions);
